@@ -61,6 +61,7 @@ serde.workspace = true
 sha1.workspace = true
 tokio.workspace = true
 tracing.workspace = true
+blurhash = "0.2.3"
 
 [lints]
 workspace = true

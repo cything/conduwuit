@@ -417,6 +417,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "blurhash"
+version = "0.2.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e79769241dcd44edf79a732545e8b5cec84c247ac060f5252cd51885d093a8fc"
+
+[[package]]
 name = "brotli"
 version = "7.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -675,6 +681,7 @@ dependencies = [
  "axum-client-ip",
  "axum-extra",
  "base64 0.22.1",
+ "blurhash",
  "bytes",
  "conduwuit_core",
  "conduwuit_database",

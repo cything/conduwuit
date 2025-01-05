@@ -2,8 +2,9 @@ use std::time::Duration;
 
 use axum::extract::State;
 use axum_client_ip::InsecureClientIp;
+use blurhash;
 use conduwuit::{
-	err,
+	debug, err,
 	utils::{self, content_disposition::make_content_disposition, math::ruma_from_usize},
 	Err, Result,
 };
@@ -45,7 +46,7 @@ pub(crate) async fn get_media_config_route(
 	name = "media_upload",
 	level = "debug",
 	skip_all,
-	fields(%client),
+	fields(%client, %body.generate_blurhash),
 )]
 pub(crate) async fn create_content_route(
 	State(services): State<crate::State>,
@@ -62,13 +63,20 @@ pub(crate) async fn create_content_route(
 		media_id: &utils::random_string(MXC_LENGTH),
 	};
 
+	let blur_hash = if body.generate_blurhash {
+		blurhash::encode(4, 3, 64, 64, &body.file).ok()
+	} else {
+		None
+	};
+	debug!("blurhash processed: {:?}", blur_hash);
+
 	services
 		.media
 		.create(&mxc, Some(user), Some(&content_disposition), content_type, &body.file)
 		.await
 		.map(|()| create_content::v3::Response {
 			content_uri: mxc.to_string().into(),
-			blurhash: None,
+			blurhash: blur_hash,
 		})
 }
 
