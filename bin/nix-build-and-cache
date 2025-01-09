@@ -18,13 +18,6 @@ just() {
         return
     fi
 
-    # historical "conduit" store for compatibility purposes, same as conduwuit
-    nix run --inputs-from "$toplevel" attic -- \
-        login \
-        conduit \
-        "${ATTIC_ENDPOINT:-https://attic.kennel.juneis.dog/conduit}" \
-        "$ATTIC_TOKEN"
-
     # Find all output paths of the installables and their build dependencies
     #readarray -t derivations < <(nix path-info --derivation "$@")
     derivations=()
@@ -42,15 +35,6 @@ just() {
     withattic() {
         nix shell --inputs-from "$toplevel" attic --command xargs attic push "$@" <<< "${cache[*]}"
     }
-    # Upload them to Attic (conduit store)
-    #
-    # Use `xargs` and a here-string because something would probably explode if
-    # several thousand arguments got passed to a command at once. Hopefully no
-    # store paths include a newline in them.
-    (
-        IFS=$'\n'
-        withattic conduit || withattic conduit || withattic conduit || true
-    )
 
     # main "conduwuit" store
     nix run --inputs-from "$toplevel" attic -- \
@@ -66,7 +50,7 @@ just() {
     # store paths include a newline in them.
     (
         IFS=$'\n'
-        withattic conduwuit || withattic conduwuit || withattic conduwuit || true
+        withattic central || withattic central || withattic central || true
 
         # push to cachix if available
         if [ "$CACHIX_AUTH_TOKEN" ]; then
