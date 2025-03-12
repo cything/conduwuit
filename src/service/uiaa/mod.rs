@@ -1,7 +1,6 @@
 use std::{
 	collections::{BTreeMap, HashSet},
 	sync::{Arc, RwLock},
-	borrow::Cow,
 };
 
 use conduwuit::{
