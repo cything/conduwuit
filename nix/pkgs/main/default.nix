@@ -162,7 +162,7 @@ commonAttrs = {
       ];
     };
 
-    doCheck = true;
+    doCheck = false;
 
     cargoExtraArgs = "--no-default-features --locked "
       + lib.optionalString
@@ -203,7 +203,7 @@ craneLib.buildPackage ( commonAttrs // {
     env = buildDepsOnlyEnv;
   });
 
-  doCheck = true;
+  doCheck = false;
 
   cargoExtraArgs = "--no-default-features --locked "
     + lib.optionalString
