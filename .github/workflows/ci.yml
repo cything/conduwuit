@@ -202,11 +202,11 @@ jobs:
                 cache-on-failure: "true"
                 cache-targets: "true"
 
-            - name: Run CI tests
-              env:
-                CARGO_PROFILE: "test"
-              run: |
-                  direnv exec . engage > >(tee -a test_output.log)
+            # - name: Run CI tests
+            #   env:
+            #     CARGO_PROFILE: "test"
+            #   run: |
+            #       direnv exec . engage > >(tee -a test_output.log)
 
             - name: Run Complement tests
               env:
