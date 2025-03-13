@@ -687,7 +687,7 @@
 {"Action":"pass","Test":"TestTyping"}
 {"Action":"pass","Test":"TestTyping/Typing_can_be_explicitly_stopped"}
 {"Action":"pass","Test":"TestTyping/Typing_notification_sent_to_local_room_members"}
-{"Action":"fail","Test":"TestUnbanViaInvite"}
+{"Action":"pass","Test":"TestUnbanViaInvite"}
 {"Action":"fail","Test":"TestUnknownEndpoints"}
 {"Action":"pass","Test":"TestUnknownEndpoints/Client-server_endpoints"}
 {"Action":"fail","Test":"TestUnknownEndpoints/Key_endpoints"}

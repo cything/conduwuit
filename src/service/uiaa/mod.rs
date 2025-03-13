@@ -1,12 +1,12 @@
 use std::{
 	collections::{BTreeMap, HashSet},
 	sync::{Arc, RwLock},
-	borrow::Cow,
 };
 
 use conduwuit::{
 	Error, Result, err, error, implement, utils,
 	utils::{hash, string::EMPTY},
+	Err,
 };
 use database::{Deserialized, Json, Map};
 use ruma::{
@@ -159,11 +159,7 @@ pub async fn try_auth(
 
 			// Check if the access token being used matches the credentials used for UIAA
 			if user_id.localpart() != user_id_from_username.localpart() {
-				return Err(Error::Request( 
-					ErrorKind::forbidden(),
-					Cow::from("User ID and access token mismatch"),
-					http::StatusCode::FORBIDDEN,
-				));
+				return Err!(Request(Forbidden("User ID and access token mismatch.")));
 			}
 			let user_id = user_id_from_username;
 
