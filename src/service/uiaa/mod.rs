@@ -1,6 +1,7 @@
 use std::{
 	collections::{BTreeMap, HashSet},
 	sync::{Arc, RwLock},
+	borrow::Cow,
 };
 
 use conduwuit::{
@@ -150,11 +151,21 @@ pub async fn try_auth(
 				));
 			};
 
-			let user_id = UserId::parse_with_server_name(
+			let user_id_from_username = UserId::parse_with_server_name(
 				username.clone(),
 				self.services.globals.server_name(),
 			)
 			.map_err(|_| Error::BadRequest(ErrorKind::InvalidParam, "User ID is invalid."))?;
+
+			// Check if the access token being used matches the credentials used for UIAA
+			if user_id.localpart() != user_id_from_username.localpart() {
+				return Err(Error::Request( 
+					ErrorKind::forbidden(),
+					Cow::from("User ID and access token mismatch"),
+					http::StatusCode::FORBIDDEN,
+				));
+			}
+			let user_id = user_id_from_username;
 
 			// Check if password is correct
 			if let Ok(hash) = self.services.users.password_hash(&user_id).await {
