@@ -4,9 +4,8 @@ use std::{
 };
 
 use conduwuit::{
-	Error, Result, err, error, implement, utils,
+	Err, Error, Result, err, error, implement, utils,
 	utils::{hash, string::EMPTY},
-	Err,
 };
 use database::{Deserialized, Json, Map};
 use ruma::{
