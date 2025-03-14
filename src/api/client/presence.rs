@@ -7,6 +7,7 @@ use ruma::api::client::{
 };
 
 use crate::{Error, Result, Ruma};
+use conduwuit::Err;
 
 /// # `PUT /_matrix/client/r0/presence/{userId}/status`
 ///
@@ -68,6 +69,8 @@ pub(crate) async fn get_presence_route(
 		if let Ok(presence) = services.presence.get_presence(&body.user_id).await {
 			presence_event = Some(presence);
 		}
+	} else {
+		return Err!(Request(Forbidden("You are not allowed to see this user's presence")));
 	}
 
 	match presence_event {
