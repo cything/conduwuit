@@ -1,5 +1,5 @@
 use axum::extract::State;
-use conduwuit::{err, warn, Err};
+use conduwuit::{Err, err};
 use ruma::{
 	UInt,
 	api::client::backup::{
@@ -190,36 +190,6 @@ pub(crate) async fn add_backup_keys_for_room_route(
 	}
 
 	for (session_id, key_data) in &body.sessions {
-		// Check if we already have a better key
-		let new_key = key_data.deserialize()?;
-		let current_key = services
-			.key_backups
-			.get_session(body.sender_user(), &body.version, &body.room_id, session_id)
-			.await?
-			.deserialize()?;
-
-		// Prefer key that `is_verified`
-		if current_key.is_verified != new_key.is_verified {
-			if current_key.is_verified {
-				warn!("rejected key because of `is_verified` current_key: {:?} new_key: {:?}", current_key, new_key);
-				continue;
-			}
-		} else {
-			// If both have same `is_verified`, prefer the one with lower
-			// `first_message_index`
-			if new_key.first_message_index > current_key.first_message_index {
-				warn!("rejected key because of `first_message_index` current_key: {:?} new_key: {:?}", current_key, new_key);
-				continue;
-			} else if (new_key.first_message_index == current_key.first_message_index)
-			// If both have same `first_message_index`, prefer the one with lower `forwarded_count`
-			&& (new_key.forwarded_count > current_key.forwarded_count)
-			{
-				warn!("rejected key because of `forwarded_count` current_key: {:?} new_key: {:?}", current_key, new_key);
-				continue;
-			}
-		};
-
-		warn!("new key accepted. current_key: {:?} new_key: {:?}", current_key, new_key);
 		services
 			.key_backups
 			.add_key(body.sender_user(), &body.version, &body.room_id, session_id, key_data)
@@ -262,16 +232,73 @@ pub(crate) async fn add_backup_keys_for_session_route(
 		)));
 	}
 
-	services
+	// Check if we already have a better key
+	let mut ok_to_replace = true;
+	if let Some(old_key) = &services
 		.key_backups
-		.add_key(
-			body.sender_user(),
-			&body.version,
-			&body.room_id,
-			&body.session_id,
-			&body.session_data,
-		)
-		.await?;
+		.get_session(body.sender_user(), &body.version, &body.room_id, &body.session_id)
+		.await
+		.ok()
+	{
+		let old_is_verified = old_key
+			.get_field::<bool>("is_verified")?
+			.unwrap_or_default();
+
+		let new_is_verified = body
+			.session_data
+			.get_field::<bool>("is_verified")?
+			.ok_or(err!(Request(BadJson("`is_verified` field should exist"))))?;
+
+		// Prefer key that `is_verified`
+		if old_is_verified != new_is_verified {
+			if old_is_verified {
+				ok_to_replace = false;
+			}
+		} else {
+			// If both have same `is_verified`, prefer the one with lower
+			// `first_message_index`
+			let old_first_message_index = old_key
+				.get_field::<UInt>("first_message_index")?
+				.unwrap_or(UInt::MAX);
+
+			let new_first_message_index = body
+				.session_data
+				.get_field::<UInt>("first_message_index")?
+				.ok_or(err!(Request(BadJson("`first_message_index` field should exist"))))?;
+
+			if new_first_message_index > old_first_message_index {
+				ok_to_replace = false;
+			} else if new_first_message_index == old_first_message_index {
+				// If both have same `first_message_index`, prefer the one with lower
+				// `forwarded_count`
+				let old_forwarded_count = old_key
+					.get_field::<UInt>("forwarded_count")?
+					.unwrap_or(UInt::MAX);
+
+				let new_forwarded_count = body
+					.session_data
+					.get_field::<UInt>("forwarded_count")?
+					.ok_or(err!(Request(BadJson("`forwarded_count` field should exist"))))?;
+
+				if new_forwarded_count > old_forwarded_count {
+					ok_to_replace = false;
+				}
+			}
+		};
+	}
+
+	if ok_to_replace {
+		services
+			.key_backups
+			.add_key(
+				body.sender_user(),
+				&body.version,
+				&body.room_id,
+				&body.session_id,
+				&body.session_data,
+			)
+			.await?;
+	}
 
 	Ok(add_backup_keys_for_session::v3::Response {
 		count: services
