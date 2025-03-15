@@ -1,3 +1,5 @@
+use std::cmp::Ordering;
+
 use axum::extract::State;
 use conduwuit::{Err, err};
 use ruma::{
@@ -266,24 +268,24 @@ pub(crate) async fn add_backup_keys_for_session_route(
 				.get_field::<UInt>("first_message_index")?
 				.ok_or(err!(Request(BadJson("`first_message_index` field should exist"))))?;
 
-			if new_first_message_index > old_first_message_index {
-				ok_to_replace = false;
-			} else if new_first_message_index == old_first_message_index {
-				// If both have same `first_message_index`, prefer the one with lower
-				// `forwarded_count`
-				let old_forwarded_count = old_key
-					.get_field::<UInt>("forwarded_count")?
-					.unwrap_or(UInt::MAX);
+			ok_to_replace = match new_first_message_index.cmp(&old_first_message_index) {
+				| Ordering::Less => true,
+				| Ordering::Greater => false,
+				| Ordering::Equal => {
+					// If both have same `first_message_index`, prefer the one with lower
+					// `forwarded_count`
+					let old_forwarded_count = old_key
+						.get_field::<UInt>("forwarded_count")?
+						.unwrap_or(UInt::MAX);
 
-				let new_forwarded_count = body
-					.session_data
-					.get_field::<UInt>("forwarded_count")?
-					.ok_or(err!(Request(BadJson("`forwarded_count` field should exist"))))?;
+					let new_forwarded_count = body
+						.session_data
+						.get_field::<UInt>("forwarded_count")?
+						.ok_or(err!(Request(BadJson("`forwarded_count` field should exist"))))?;
 
-				if new_forwarded_count > old_forwarded_count {
-					ok_to_replace = false;
-				}
-			}
+					new_forwarded_count < old_forwarded_count
+				},
+			};
 		};
 	}
 
