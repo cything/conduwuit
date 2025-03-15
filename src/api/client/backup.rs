@@ -1,5 +1,5 @@
 use axum::extract::State;
-use conduwuit::{Err, err};
+use conduwuit::{err, warn, Err};
 use ruma::{
 	UInt,
 	api::client::backup::{
@@ -146,6 +146,37 @@ pub(crate) async fn add_backup_keys_route(
 
 	for (room_id, room) in &body.rooms {
 		for (session_id, key_data) in &room.sessions {
+			// Check if we already have a better key
+			let new_key = key_data.deserialize()?;
+			let current_key = services
+				.key_backups
+				.get_session(body.sender_user(), &body.version, room_id, session_id)
+				.await?
+				.deserialize()?;
+			
+
+			// Prefer key that `is_verified`
+			if current_key.is_verified != new_key.is_verified {
+				if current_key.is_verified {
+					warn!("rejected key because of `is_verified` current_key: {:?} new_key: {:?}", current_key, new_key);
+					continue;
+				}
+			} else {
+				// If both have same `is_verified`, prefer the one with lower
+				// `first_message_index`
+				if new_key.first_message_index > current_key.first_message_index {
+					warn!("rejected key because of `first_message_index` current_key: {:?} new_key: {:?}", current_key, new_key);
+					continue;
+				} else if (new_key.first_message_index == current_key.first_message_index)
+				// If both have same `first_message_index`, prefer the one with lower `forwarded_count`
+				&& (new_key.forwarded_count > current_key.forwarded_count)
+				{
+					warn!("rejected key because of `forwarded_count` current_key: {:?} new_key: {:?}", current_key, new_key);
+					continue;
+				}
+			};
+
+			warn!("new key accepted. current_key: {:?} new_key: {:?}", current_key, new_key);
 			services
 				.key_backups
 				.add_key(body.sender_user(), &body.version, room_id, session_id, key_data)
