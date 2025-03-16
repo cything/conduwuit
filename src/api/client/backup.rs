@@ -249,7 +249,7 @@ pub(crate) async fn add_backup_keys_for_session_route(
 		let new_is_verified = body
 			.session_data
 			.get_field::<bool>("is_verified")?
-			.ok_or(err!(Request(BadJson("`is_verified` field should exist"))))?;
+			.ok_or_else(|| err!(Request(BadJson("`is_verified` field should exist"))))?;
 
 		// Prefer key that `is_verified`
 		if old_is_verified != new_is_verified {
@@ -266,7 +266,9 @@ pub(crate) async fn add_backup_keys_for_session_route(
 			let new_first_message_index = body
 				.session_data
 				.get_field::<UInt>("first_message_index")?
-				.ok_or(err!(Request(BadJson("`first_message_index` field should exist"))))?;
+				.ok_or_else(|| {
+					err!(Request(BadJson("`first_message_index` field should exist")))
+				})?;
 
 			ok_to_replace = match new_first_message_index.cmp(&old_first_message_index) {
 				| Ordering::Less => true,
@@ -281,7 +283,9 @@ pub(crate) async fn add_backup_keys_for_session_route(
 					let new_forwarded_count = body
 						.session_data
 						.get_field::<UInt>("forwarded_count")?
-						.ok_or(err!(Request(BadJson("`forwarded_count` field should exist"))))?;
+						.ok_or_else(|| {
+							err!(Request(BadJson("`forwarded_count` field should exist")))
+						})?;
 
 					new_forwarded_count < old_forwarded_count
 				},
