@@ -144,7 +144,7 @@ impl Service {
 	pub async fn delete_pusher(&self, sender: &UserId, pushkey: &str) {
 		let key = (sender, pushkey);
 		self.db.senderkey_pusher.del(key);
-		self.db.pushkey_deviceid.del(pushkey);
+		self.db.pushkey_deviceid.remove(pushkey);
 
 		self.services
 			.sending
