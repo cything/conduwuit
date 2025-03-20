@@ -3,7 +3,7 @@ use std::{fmt::Debug, mem, sync::Arc};
 use bytes::BytesMut;
 use conduwuit::{
 	Err, PduEvent, Result, debug_warn, err, trace,
-	utils::{ReadyExt, TryFutureExtExt, stream::TryIgnore, string_from_bytes},
+	utils::{TryFutureExtExt, stream::TryIgnore, string_from_bytes},
 	warn,
 };
 use database::{Deserialized, Ignore, Interfix, Json, Map};
@@ -13,7 +13,7 @@ use ruma::{
 	DeviceId, RoomId, UInt, UserId,
 	api::{
 		IncomingResponse, MatrixVersion, OutgoingRequest, SendAccessToken,
-		client::push::{self, Pusher, PusherKind, set_pusher},
+		client::push::{Pusher, PusherKind, set_pusher},
 		push_gateway::send_event_notification::{
 			self,
 			v1::{Device, Notification, NotificationCounts, NotificationPriority},
@@ -131,7 +131,7 @@ impl Service {
 				self.db.senderkey_pusher.put(key, Json(pusher));
 				self.db
 					.pushkey_deviceid
-					.put(pushkey, sender_device.as_str());
+					.raw_put(pushkey, sender_device.as_str());
 			},
 			| set_pusher::v3::PusherAction::Delete(ids) => {
 				self.delete_pusher(sender, &ids.pushkey.as_str()).await;
