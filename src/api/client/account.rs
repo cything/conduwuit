@@ -627,6 +627,12 @@ pub(crate) async fn change_password_route(
 			.ready_filter(|id| *id != sender_device)
 			.for_each(|id| services.users.remove_device(sender_user, id))
 			.await;
+
+		// Remove all pushers except the ones associated with this session
+		services
+			.pusher
+			.delete_pushers_device(sender_user, sender_device)
+			.await;
 	}
 
 	info!("User {sender_user} changed their password.");
