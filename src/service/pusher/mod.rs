@@ -131,7 +131,7 @@ impl Service {
 				self.db.senderkey_pusher.put(key, Json(pusher));
 				self.db
 					.pushkey_deviceid
-					.insert(pushkey, sender_device);
+					.insert(pushkey, sender_device.as_str());
 			},
 			| set_pusher::v3::PusherAction::Delete(ids) => {
 				self.delete_pusher(sender, &ids.pushkey.as_str()).await;
@@ -156,18 +156,16 @@ impl Service {
 	pub async fn delete_pushers_device(&self, sender: &UserId, device: &DeviceId) {
 		let pushkeys: Vec<&str> = self.get_pushkeys(sender).collect().await;
 		for pushkey in pushkeys {
-			if let Ok(pusher_device) = self
-				.db
-				.pushkey_deviceid
-				.get(pushkey)
-				.await
-				.deserialized::<String>()
-			{
+			if let Ok(pusher_device) = self.get_pusher_device(pushkey).await {
 				if pusher_device == device.as_str() {
 					self.delete_pusher(sender, pushkey).await;
 				}
 			}
 		}
+	}
+
+	pub async fn get_pusher_device(&self, pushkey: &str) -> Result<String> {
+		self.db.pushkey_deviceid.get(pushkey).await.deserialized()
 	}
 
 	pub async fn get_pusher(&self, sender: &UserId, pushkey: &str) -> Result<Pusher> {
