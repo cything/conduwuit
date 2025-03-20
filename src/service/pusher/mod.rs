@@ -153,17 +153,6 @@ impl Service {
 			.ok();
 	}
 
-	pub async fn delete_pushers_device(&self, sender: &UserId, device: &DeviceId) {
-		let pushkeys: Vec<&str> = self.get_pushkeys(sender).collect().await;
-		for pushkey in pushkeys {
-			if let Ok(pusher_device) = self.get_pusher_device(pushkey).await {
-				if pusher_device == device.as_str() {
-					self.delete_pusher(sender, pushkey).await;
-				}
-			}
-		}
-	}
-
 	pub async fn get_pusher_device(&self, pushkey: &str) -> Result<String> {
 		self.db.pushkey_deviceid.get(pushkey).await.deserialized()
 	}

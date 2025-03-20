@@ -629,10 +629,14 @@ pub(crate) async fn change_password_route(
 			.await;
 
 		// Remove all pushers except the ones associated with this session
-		services
-			.pusher
-			.delete_pushers_device(sender_user, sender_device)
-			.await;
+		let pushkeys: Vec<&str> = services.pusher.get_pushkeys(sender_user).collect().await;
+		for pushkey in pushkeys {
+			if let Ok(pusher_device) = services.pusher.get_pusher_device(pushkey).await {
+				if pusher_device != sender_device.as_str() {
+					services.pusher.delete_pusher(sender_user, pushkey).await;
+				}
+			}
+		}
 	}
 
 	info!("User {sender_user} changed their password.");
