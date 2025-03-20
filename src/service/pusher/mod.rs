@@ -3,7 +3,7 @@ use std::{fmt::Debug, mem, sync::Arc};
 use bytes::BytesMut;
 use conduwuit::{
 	Err, PduEvent, Result, debug_warn, err, trace,
-	utils::{TryFutureExtExt, stream::TryIgnore, string_from_bytes},
+	utils::{stream::TryIgnore, string_from_bytes},
 	warn,
 };
 use database::{Deserialized, Ignore, Interfix, Json, Map};
@@ -131,7 +131,7 @@ impl Service {
 				self.db.senderkey_pusher.put(key, Json(pusher));
 				self.db
 					.pushkey_deviceid
-					.raw_put(pushkey, sender_device.as_str());
+					.insert(pushkey, sender_device);
 			},
 			| set_pusher::v3::PusherAction::Delete(ids) => {
 				self.delete_pusher(sender, &ids.pushkey.as_str()).await;
@@ -156,14 +156,14 @@ impl Service {
 	pub async fn delete_pushers_device(&self, sender: &UserId, device: &DeviceId) {
 		let pushkeys: Vec<&str> = self.get_pushkeys(sender).collect().await;
 		for pushkey in pushkeys {
-			if let Ok(pushkey_device) = self
+			if let Ok(pusher_device) = self
 				.db
 				.pushkey_deviceid
-				.qry(pushkey)
+				.get(pushkey)
 				.await
 				.deserialized::<String>()
 			{
-				if pushkey_device == device.as_str() {
+				if pusher_device == device.as_str() {
 					self.delete_pusher(sender, pushkey).await;
 				}
 			}
