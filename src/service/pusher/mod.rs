@@ -10,7 +10,7 @@ use database::{Deserialized, Ignore, Interfix, Json, Map};
 use futures::{Stream, StreamExt};
 use ipaddress::IPAddress;
 use ruma::{
-	DeviceId, RoomId, UInt, UserId,
+	DeviceId, OwnedDeviceId, RoomId, UInt, UserId,
 	api::{
 		IncomingResponse, MatrixVersion, OutgoingRequest, SendAccessToken,
 		client::push::{Pusher, PusherKind, set_pusher},
@@ -129,12 +129,10 @@ impl Service {
 				let pushkey = data.pusher.ids.pushkey.as_str();
 				let key = (sender, pushkey);
 				self.db.senderkey_pusher.put(key, Json(pusher));
-				self.db
-					.pushkey_deviceid
-					.insert(pushkey, sender_device.as_str());
+				self.db.pushkey_deviceid.insert(pushkey, sender_device);
 			},
 			| set_pusher::v3::PusherAction::Delete(ids) => {
-				self.delete_pusher(sender, &ids.pushkey.as_str()).await;
+				self.delete_pusher(sender, ids.pushkey.as_str()).await;
 			},
 		}
 
@@ -153,7 +151,7 @@ impl Service {
 			.ok();
 	}
 
-	pub async fn get_pusher_device(&self, pushkey: &str) -> Result<String> {
+	pub async fn get_pusher_device(&self, pushkey: &str) -> Result<OwnedDeviceId> {
 		self.db.pushkey_deviceid.get(pushkey).await.deserialized()
 	}
 
