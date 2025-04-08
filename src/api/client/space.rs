@@ -36,7 +36,7 @@ pub(crate) async fn get_hierarchy_route(
 
 	let max_depth = body
 		.max_depth
-		.unwrap_or_else(|| UInt::from(3_u32))
+		.unwrap_or_else(|| UInt::from(10_u32))
 		.min(UInt::from(10_u32));
 
 	let key = body
@@ -112,10 +112,25 @@ where
 			| (Some(SummaryAccessibility::Inaccessible), true) => {
 				return Err!(Request(Forbidden("The requested room is inaccessible")));
 			},
-			| (Some(SummaryAccessibility::Accessible(summary)), _) => {
+			| (Some(SummaryAccessibility::Accessible(mut summary)), _) => {
 				let populate = parents.len() >= short_room_ids.clone().count();
 
-				let mut children: Vec<Entry> = get_parent_children_via(&summary, suggested_only)
+				// filter suggested_only
+				// do it here cause this gets inserted to `rooms` and in turn to the response
+				if suggested_only {
+					summary.children_state = summary
+						.children_state
+						.iter()
+						.map(ToOwned::to_owned)
+						.filter(|ce| {
+							ce.deserialize()
+								.map(|ce| ce.content.suggested)
+								.unwrap_or_default()
+						})
+						.collect();
+				}
+
+				let mut children: Vec<Entry> = get_parent_children_via(&summary, false)
 					.filter(|(room, _)| !parents.contains(room))
 					.rev()
 					.map(|(key, val)| (key, val.collect()))

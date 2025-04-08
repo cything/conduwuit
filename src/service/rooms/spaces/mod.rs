@@ -29,6 +29,7 @@ use ruma::{
 		StateEventType,
 		space::child::{HierarchySpaceChildEvent, SpaceChildEventContent},
 	},
+	room::RoomType,
 	serde::Raw,
 	space::SpaceRoomJoinRule,
 };
@@ -140,11 +141,22 @@ pub async fn get_summary_and_children_local(
 		},
 	}
 
-	let children_pdus: Vec<_> = self
-		.get_space_child_events(current_room)
-		.map(PduEvent::into_stripped_spacechild_state_event)
-		.collect()
-		.await;
+	let mut children_pdus = Vec::new();
+	// only spaces can have m.space.child events
+	if self
+		.services
+		.state_accessor
+		.get_room_type(current_room)
+		.await
+		.map(|x| x == RoomType::Space)
+		.unwrap_or_default()
+	{
+		children_pdus = self
+			.get_space_child_events(current_room)
+			.map(PduEvent::into_stripped_spacechild_state_event)
+			.collect()
+			.await;
+	}
 
 	let Ok(summary) = self
 		.get_room_summary(current_room, children_pdus, identifier)
@@ -264,6 +276,9 @@ fn get_space_child_events<'a>(
 				if content.via.is_empty() {
 					return None;
 				}
+			} else {
+				// empty content also means that the link was removed
+				return None;
 			}
 
 			if RoomId::parse(&state_key).is_err() {
