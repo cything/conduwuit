@@ -17,7 +17,6 @@ use conduwuit_service::{
 use futures::{StreamExt, TryFutureExt, future::OptionFuture};
 use ruma::{
 	OwnedRoomId, OwnedServerName, RoomId, UInt, UserId, api::client::space::get_hierarchy,
-	room::RoomType,
 };
 
 use crate::Ruma;
@@ -97,18 +96,6 @@ where
 	let mut rooms = Vec::with_capacity(limit);
 	let mut parents = BTreeSet::new();
 	while let Some((current_room, via)) = queue.pop_front() {
-		// skip non-space rooms
-		if !services
-			.rooms
-			.state_accessor
-			.get_room_type(&current_room)
-			.await
-			.map(|x| x == RoomType::Space)
-			.unwrap_or_default()
-		{
-			continue;
-		}
-
 		let summary = services
 			.rooms
 			.spaces
