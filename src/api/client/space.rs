@@ -16,7 +16,7 @@ use conduwuit_service::{
 };
 use futures::{StreamExt, TryFutureExt, future::OptionFuture};
 use ruma::{
-	OwnedRoomId, OwnedServerName, RoomId, UInt, UserId, api::client::space::get_hierarchy,
+	OwnedRoomId, OwnedServerName, RoomId, UInt, UserId, api::client::space::get_hierarchy, room::RoomType,
 };
 
 use crate::Ruma;
@@ -113,6 +113,11 @@ where
 				return Err!(Request(Forbidden("The requested room is inaccessible")));
 			},
 			| (Some(SummaryAccessibility::Accessible(summary)), _) => {
+				// skip non-space rooms
+				if summary.room_type != Some(RoomType::Space) {
+					continue;
+				}
+				
 				let populate = parents.len() >= short_room_ids.clone().count();
 
 				let mut children: Vec<Entry> = get_parent_children_via(&summary, suggested_only)
