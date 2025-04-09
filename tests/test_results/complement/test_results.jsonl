@@ -75,9 +75,9 @@
 {"Action":"fail","Test":"TestClientSpacesSummary"}
 {"Action":"pass","Test":"TestClientSpacesSummary/max_depth"}
 {"Action":"fail","Test":"TestClientSpacesSummary/pagination"}
-{"Action":"fail","Test":"TestClientSpacesSummary/query_whole_graph"}
-{"Action":"fail","Test":"TestClientSpacesSummary/redact_link"}
-{"Action":"fail","Test":"TestClientSpacesSummary/suggested_only"}
+{"Action":"pass","Test":"TestClientSpacesSummary/query_whole_graph"}
+{"Action":"pass","Test":"TestClientSpacesSummary/redact_link"}
+{"Action":"pass","Test":"TestClientSpacesSummary/suggested_only"}
 {"Action":"fail","Test":"TestClientSpacesSummaryJoinRules"}
 {"Action":"pass","Test":"TestContent"}
 {"Action":"pass","Test":"TestContentCSAPIMediaV1"}
